@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Добавить файл</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Roboto", sans-serif;
+        }
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 400px;
+        }
+        h2 {
+            margin-bottom: 15px;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            background: #292929;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .input-group .material-icons {
+            color: #aaa;
+            margin-right: 10px;
+        }
+        .input {
+            background: none;
+            border: none;
+            outline: none;
+            color: white;
+            flex-grow: 1;
+            font-size: 16px;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 18px;
+            background: #00a8ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn:hover {
+            background: #0090e0;
+        }
+        .btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Создать новый файл</h2>
+        <div class="input-group">
+            <span class="material-icons">description</span>
+            <input class="input" type="text" id="newName" placeholder="Название файла" oninput="checkInputs()">
+        </div>
+        <button class="btn" id="button" onclick="saveAndGoBack()" disabled>Введите название</button>
+    </div>
+
+    <script>
+        function checkInputs() {
+            let name = document.getElementById("newName").value.trim();
+            let button = document.getElementById("button");
+
+            if (name === "") {
+                button.textContent = "Введите название";
+                button.disabled = true;
+            } else {
+                button.textContent = "Добавить";
+                button.disabled = false;
+            }
+        }
+
+        function saveAndGoBack() {
+            let name = document.getElementById("newName").value.trim();
+            if (name === "") {
+                alert("Введите название файла!");
+                return;
+            }
+
+            let files = JSON.parse(localStorage.getItem("files")) || [];
+            let newFile = {
+                id: Date.now(),
+                name: name,
+                content: ""
+            };
+
+            files.push(newFile);
+            localStorage.setItem("files", JSON.stringify(files));
+            window.location.href = "index.html";
+        }
+    </script>
+
+</body>
+</html>

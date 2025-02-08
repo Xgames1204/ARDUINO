@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Редактировать файл</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Roboto", sans-serif;
+        }
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            text-align: center;
+        }
+        .banner {
+            background: #1e1e1e;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .banner .material-icons {
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .container {
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            background: #1e1e1e;
+            border: none;
+            padding: 10px;
+            color: white;
+            font-size: 16px;
+            border-radius: 8px;
+            resize: none;
+        }
+        .btn {
+            background: #00a8ff;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+        .btn:hover {
+            background: #0090e0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="banner">
+        <span class="material-icons" onclick="window.location.href='index.html'">arrow_back</span>
+        <p id="fileName">Файл</p>
+        <span class="material-icons" onclick="deleteFile()">delete</span>
+    </div>
+
+    <div class="container">
+        <textarea id="fileContent"></textarea>
+        <button class="btn" onclick="saveFile()">Сохранить</button>
+    </div>
+
+    <script>
+        let currentFileId;
+
+        function loadFile() {
+            let files = JSON.parse(localStorage.getItem("files")) || [];
+            currentFileId = localStorage.getItem("editingFile");
+
+            let file = files.find(f => f.id == currentFileId);
+            if (!file) {
+                alert("Файл не найден!");
+                window.location.href = "index.html";
+                return;
+            }
+
+            document.getElementById("fileName").innerText = file.name;
+            document.getElementById("fileContent").value = file.content;
+        }
+
+        function saveFile() {
+            let files = JSON.parse(localStorage.getItem("files")) || [];
+            let file = files.find(f => f.id == currentFileId);
+            if (file) {
+                file.content = document.getElementById("fileContent").value;
+                localStorage.setItem("files", JSON.stringify(files));
+                alert("Файл сохранён!");
+                window.location.href = "index.html";
+            }
+        }
+
+        function deleteFile() {
+            let files = JSON.parse(localStorage.getItem("files")) || [];
+            files = files.filter(f => f.id != currentFileId);
+            localStorage.setItem("files", JSON.stringify(files));
+            alert("Файл удалён!");
+            window.location.href = "index.html";
+        }
+
+        window.onload = loadFile;
+    </script>
+
+</body>
+</html>
