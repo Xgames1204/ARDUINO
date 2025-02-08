@@ -3,170 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <title>Сохранение ARDUINO файлов</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="icon" type="image/png" href="file.png">
+    <link rel="icon" type="image/png" href="file.png"> <!-- Иконка вкладки -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons" rel="stylesheet"> <!-- Google Icons -->
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Roboto", sans-serif;
-        }
         body {
             background-color: #121212;
-            color: #ffffff;
+            color: white;
+            font-family: Arial, sans-serif;
         }
         .banner {
-            background: #1e1e1e;
-            padding: 15px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #1e1e1e;
+            color: white;
+            padding: 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-        .banner-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .banner .material-icons {
-            color: white;
-            font-size: 28px;
-            cursor: pointer;
+        .icon {
+            font-size: 24px;
+            margin-right: 10px;
         }
         .search {
-            padding: 8px;
-            border-radius: 8px;
+            padding: 5px;
+            border-radius: 5px;
             border: none;
-            background: #2a2a2a;
+            background-color: #333;
             color: white;
-            width: 200px;
-            text-align: center;
         }
         .container {
-            padding: 20px;
+            margin-top: 60px;
+            padding: 10px;
         }
         .file {
-            background: #1e1e1e;
-            padding: 12px;
-            margin-bottom: 10px;
+            background-color: #252525;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-radius: 10px;
         }
-        .file-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .file .material-icons {
-            color: white;
-            font-size: 24px;
-        }
-        .file input {
-            background: transparent;
+        .btn {
+            background-color: #4CAF50;
             border: none;
             color: white;
-            font-size: 18px;
-            width: 140px;
-            text-align: left;
-        }
-        .file input:focus {
-            outline: none;
-            border-bottom: 1px solid white;
-        }
-        .icons {
-            display: flex;
-            gap: 10px;
-        }
-        .icons .material-icons {
+            padding: 5px 10px;
             cursor: pointer;
+            border-radius: 5px;
+        }
+        .btn-red {
+            background-color: red;
         }
     </style>
 </head>
 <body>
 
-    <div class="banner">
-        <div class="banner-left">
-            <span class="material-icons">folder</span>
-            <h2>ARDUINO Файлы</h2>
-        </div>
-        <input class="search" type="text" id="search" placeholder="Поиск" onkeyup="searchFiles()">
-        <span class="material-icons" onclick="window.location.href='add.html'">add</span>
-    </div>
+<div class="banner">
+    <span class="icon material-icons">description</span> <!-- Иконка файла -->
+    <p>Сохранение ARDUINO файлов</p>
+    <input class="search" type="text" id="search" placeholder="Поиск" onkeyup="searchFiles()">
+    <button class="btn" onclick="createFile()">Создать файл</button>
+</div>
 
-    <div class="container" id="fileContainer">
-        <!-- Файлы будут добавляться сюда -->
-    </div>
+<div class="container" id="fileList"></div>
 
-    <script>
-        function searchFiles() {
-            let input = document.getElementById("search").value.toLowerCase();
-            let files = document.querySelectorAll(".file");
+<script>
+let db;
 
-            files.forEach(file => {
-                let text = file.querySelector("input").value.toLowerCase();
-                file.style.display = text.includes(input) ? "flex" : "none";
-            });
+// Открываем базу данных IndexedDB
+let request = indexedDB.open("ArduinoFilesDB", 1);
+request.onupgradeneeded = function(event) {
+    db = event.target.result;
+    if (!db.objectStoreNames.contains("files")) {
+        db.createObjectStore("files", { keyPath: "id", autoIncrement: true });
+    }
+};
+request.onsuccess = function(event) {
+    db = event.target.result;
+    loadFiles();
+};
+request.onerror = function(event) {
+    console.error("Ошибка базы данных", event.target.errorCode);
+};
+
+// Функция создания нового файла
+function createFile() {
+    let fileName = prompt("Введите имя файла:");
+    if (!fileName) return;
+
+    let transaction = db.transaction(["files"], "readwrite");
+    let store = transaction.objectStore("files");
+    let newFile = { name: fileName, content: "" };
+    store.add(newFile);
+    transaction.oncomplete = function() {
+        loadFiles();
+    };
+}
+
+// Функция загрузки файлов из базы
+function loadFiles() {
+    let fileList = document.getElementById("fileList");
+    fileList.innerHTML = "";
+
+    let transaction = db.transaction(["files"], "readonly");
+    let store = transaction.objectStore("files");
+    let request = store.getAll();
+    
+    request.onsuccess = function() {
+        request.result.forEach(file => {
+            let fileDiv = document.createElement("div");
+            fileDiv.className = "file";
+            fileDiv.innerHTML = `
+                <span>${file.name}</span>
+                <div>
+                    <button class="btn" onclick="editFile(${file.id})">✏ Изменить</button>
+                    <button class="btn btn-red" onclick="deleteFile(${file.id})">🗑 Удалить</button>
+                </div>
+            `;
+            fileList.appendChild(fileDiv);
+        });
+    };
+}
+
+// Функция редактирования файла
+function editFile(fileId) {
+    let transaction = db.transaction(["files"], "readwrite");
+    let store = transaction.objectStore("files");
+    let request = store.get(fileId);
+
+    request.onsuccess = function() {
+        let file = request.result;
+        let newContent = prompt("Редактирование файла:", file.content);
+        if (newContent !== null) {
+            file.content = newContent;
+            store.put(file);
         }
+    };
+}
 
-        function loadFiles() {
-            let files = JSON.parse(localStorage.getItem("files")) || [];
-            let container = document.getElementById("fileContainer");
-            container.innerHTML = "";
+// Функция удаления файла
+function deleteFile(fileId) {
+    let transaction = db.transaction(["files"], "readwrite");
+    let store = transaction.objectStore("files");
+    store.delete(fileId);
+    transaction.oncomplete = function() {
+        loadFiles();
+    };
+}
 
-            files.forEach(file => {
-                let fileDiv = document.createElement("div");
-                fileDiv.className = "file";
-                fileDiv.innerHTML = `
-                    <div class="file-left">
-                        <span class="material-icons">description</span>
-                        <input type="text" value="${file.name}" id="name-${file.id}" disabled>
-                    </div>
-                    <div class="icons">
-                        <span class="material-icons" onclick="editFileName('${file.id}')">edit</span>
-                        <span class="material-icons" onclick="openFile('${file.id}')">chevron_right</span>
-                        <span class="material-icons" onclick="deleteFile('${file.id}')">delete</span>
-                    </div>
-                `;
-                container.appendChild(fileDiv);
-            });
-        }
+// Функция поиска файлов
+function searchFiles() {
+    let input = document.getElementById("search").value.toLowerCase();
+    let files = document.querySelectorAll(".file");
 
-        function editFileName(fileId) {
-            let input = document.getElementById(`name-${fileId}`);
-            input.disabled = false;
-            input.focus();
-            input.addEventListener("blur", function () {
-                saveFileName(fileId, input.value);
-                input.disabled = true;
-            });
-        }
-
-        function saveFileName(fileId, newName) {
-            let files = JSON.parse(localStorage.getItem("files")) || [];
-            let file = files.find(f => f.id == fileId);
-            if (file) {
-                file.name = newName;
-                localStorage.setItem("files", JSON.stringify(files));
-            }
-        }
-
-        function deleteFile(fileId) {
-            let files = JSON.parse(localStorage.getItem("files")) || [];
-            files = files.filter(f => f.id != fileId);
-            localStorage.setItem("files", JSON.stringify(files));
-            loadFiles();
-        }
-
-        function openFile(fileId) {
-            localStorage.setItem("editingFile", fileId);
-            window.location.href = "edit.html";
-        }
-
-        window.onload = loadFiles;
-    </script>
+    files.forEach(file => {
+        let text = file.querySelector("span").innerText.toLowerCase();
+        file.style.display = text.includes(input) ? "flex" : "none";
+    });
+}
+</script>
 
 </body>
 </html>
