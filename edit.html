@@ -56,13 +56,22 @@
         .btn:hover {
             background: #0090e0;
         }
+        #fileName {
+            background: transparent;
+            color: white;
+            border: none;
+            font-size: 18px;
+            text-align: center;
+            width: 60%;
+            outline: none;
+        }
     </style>
 </head>
 <body>
 
     <div class="banner">
         <span class="material-icons" onclick="window.location.href='index.html'">arrow_back</span>
-        <p id="fileName">Файл</p>
+        <input type="text" id="fileName" placeholder="Название файла">
         <span class="material-icons" onclick="deleteFile()">delete</span>
     </div>
 
@@ -72,43 +81,81 @@
     </div>
 
     <script>
-        let currentFileId;
+        let db;
+        let fileId;
+
+        // Открываем IndexedDB
+        let request = indexedDB.open("ArduinoFilesDB", 1);
+        request.onsuccess = function(event) {
+            db = event.target.result;
+            loadFile();
+        };
+
+        // Получаем ID файла из URL
+        function getFileIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get("id");
+        }
 
         function loadFile() {
-            let files = JSON.parse(localStorage.getItem("files")) || [];
-            currentFileId = localStorage.getItem("editingFile");
-
-            let file = files.find(f => f.id == currentFileId);
-            if (!file) {
+            fileId = getFileIdFromUrl();
+            if (!fileId) {
                 alert("Файл не найден!");
                 window.location.href = "index.html";
                 return;
             }
 
-            document.getElementById("fileName").innerText = file.name;
-            document.getElementById("fileContent").value = file.content;
+            let transaction = db.transaction(["files"], "readonly");
+            let store = transaction.objectStore("files");
+            let request = store.get(Number(fileId));
+
+            request.onsuccess = function() {
+                if (!request.result) {
+                    alert("Файл не найден!");
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                document.getElementById("fileName").value = request.result.name;
+                document.getElementById("fileContent").value = request.result.content;
+            };
         }
 
         function saveFile() {
-            let files = JSON.parse(localStorage.getItem("files")) || [];
-            let file = files.find(f => f.id == currentFileId);
-            if (file) {
-                file.content = document.getElementById("fileContent").value;
-                localStorage.setItem("files", JSON.stringify(files));
+            let newName = document.getElementById("fileName").value.trim();
+            let newContent = document.getElementById("fileContent").value;
+
+            if (!newName) {
+                alert("Название файла не может быть пустым!");
+                return;
+            }
+
+            let transaction = db.transaction(["files"], "readwrite");
+            let store = transaction.objectStore("files");
+            let request = store.get(Number(fileId));
+
+            request.onsuccess = function() {
+                let file = request.result;
+                file.name = newName;
+                file.content = newContent;
+                store.put(file);
                 alert("Файл сохранён!");
                 window.location.href = "index.html";
-            }
+            };
         }
 
         function deleteFile() {
-            let files = JSON.parse(localStorage.getItem("files")) || [];
-            files = files.filter(f => f.id != currentFileId);
-            localStorage.setItem("files", JSON.stringify(files));
-            alert("Файл удалён!");
-            window.location.href = "index.html";
-        }
+            if (!confirm("Вы уверены, что хотите удалить файл?")) return;
 
-        window.onload = loadFile;
+            let transaction = db.transaction(["files"], "readwrite");
+            let store = transaction.objectStore("files");
+            let request = store.delete(Number(fileId));
+
+            request.onsuccess = function() {
+                alert("Файл удалён!");
+                window.location.href = "index.html";
+            };
+        }
     </script>
 
 </body>
